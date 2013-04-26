@@ -3,7 +3,7 @@
  */
 package akka.actor
 
-import akka.dispatch.{ RequiresMessageQueue, Envelope, DequeBasedMessageQueue }
+import akka.dispatch.{ UnboundedDequeBasedMessageQueueSemantics, RequiresMessageQueue, Envelope, DequeBasedMessageQueue }
 import akka.AkkaException
 
 /**
@@ -47,8 +47,9 @@ import akka.AkkaException
  *  any trait/class that overrides the `preRestart` callback. This means it's not possible to write
  *  `Actor with MyActor with Stash` if `MyActor` overrides `preRestart`.
  */
-trait Stash extends Actor with RequiresMessageQueue[DequeBasedMessageQueue] {
+trait Stash extends AbstractStash with RequiresMessageQueue[DequeBasedMessageQueue]
 
+trait AbstractStash extends Actor {
   /* The private stash of the actor. It is only accessible using `stash()` and
    * `unstashAll()`.
    */
@@ -68,12 +69,12 @@ trait Stash extends Actor with RequiresMessageQueue[DequeBasedMessageQueue] {
   private val mailbox: DequeBasedMessageQueue = {
     context.asInstanceOf[ActorCell].mailbox.messageQueue match {
       case queue: DequeBasedMessageQueue ⇒ queue
-      case other ⇒ throw ActorInitializationException(self, "DequeBasedMailbox required, got: " + other.getClass() + """
-An (unbounded) deque-based mailbox can be configured as follows:
-  my-custom-dispatcher {
-    mailbox-type = "akka.dispatch.UnboundedDequeBasedMailbox"
-  }
-""")
+      case other ⇒ throw ActorInitializationException(self, "DequeBasedMailbox required, got: " + other.getClass() +
+        """An (unbounded) deque-based mailbox can be configured as follows:
+          |  my-custom-mailbox {
+          |    mailbox-type = "akka.dispatch.UnboundedDequeBasedMailbox"
+          |  }
+          |""".stripMargin)
     }
   }
 

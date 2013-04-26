@@ -12,6 +12,7 @@ import scala.util.Success
 import scala.util.Failure
 import akka.actor.Terminated
 import akka.actor.Props
+import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 
 object TcpPipelineHandler {
 
@@ -84,7 +85,7 @@ class TcpPipelineHandler[Ctx <: PipelineContext, Cmd, Evt](
   init: TcpPipelineHandler.Init[Ctx, Cmd, Evt],
   connection: ActorRef,
   handler: ActorRef)
-  extends Actor {
+  extends Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   import init._
   import TcpPipelineHandler._

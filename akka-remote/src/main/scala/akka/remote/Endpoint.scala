@@ -24,6 +24,7 @@ import scala.annotation.tailrec
 import akka.remote.EndpointWriter.FlushAndStop
 import akka.actor.SupervisorStrategy._
 import akka.remote.EndpointManager.Link
+import akka.dispatch.{ UnboundedDequeBasedMessageQueueSemantics, UnboundedMessageQueueSemantics, RequiresMessageQueue }
 
 /**
  * INTERNAL API
@@ -171,7 +172,8 @@ private[remote] class ReliableDeliverySupervisor(
   val settings: RemoteSettings,
   val codec: AkkaPduCodec,
   val refuseUid: Option[Int],
-  val receiveBuffers: ConcurrentHashMap[Link, AckedReceiveBuffer[Message]]) extends Actor {
+  val receiveBuffers: ConcurrentHashMap[Link, AckedReceiveBuffer[Message]]) extends Actor
+  with RequiresMessageQueue[UnboundedDequeBasedMessageQueueSemantics] {
   import ReliableDeliverySupervisor._
 
   def retryGateEnabled = settings.RetryGateClosedFor > Duration.Zero
@@ -390,7 +392,9 @@ private[remote] class EndpointWriter(
   codec: AkkaPduCodec,
   val refuseUid: Option[Int],
   val receiveBuffers: ConcurrentHashMap[Link, AckedReceiveBuffer[Message]],
-  val reliableDeliverySupervisor: Option[ActorRef]) extends EndpointActor(localAddress, remoteAddress, transport, settings, codec) with Stash with FSM[EndpointWriter.State, Unit] {
+  val reliableDeliverySupervisor: Option[ActorRef])
+  extends EndpointActor(localAddress, remoteAddress, transport, settings, codec) with AbstractStash
+  with FSM[EndpointWriter.State, Unit] with RequiresMessageQueue[UnboundedDequeBasedMessageQueueSemantics] {
 
   import EndpointWriter._
   import context.dispatcher
